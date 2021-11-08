@@ -13,7 +13,6 @@ async function createDir() {
 }
 createDir();
 
-
 //сбор стилей в единый файл project-dist/style.css.
 const outputStream = fs.createWriteStream(path.join(__dirname, 'project-dist', 'style.css'));
 
@@ -74,33 +73,37 @@ async function createFileIndex() {
       const filesHTML =  await fsPromises.readdir(path.join(__dirname, 'components'), {force: true} ); 
   
       const readStreamIndex = fs.createReadStream(path.join(__dirname, 'template.html'), 'utf-8');
+      
+      let fullChunk='';
       readStreamIndex.on('data', (chunk) => {
-  
-          for (const fileHTML of filesHTML) {
-            if (path.extname(fileHTML) == '.html') { 
-              const nameFileHtml = fileHTML.slice(0, fileHTML.length-5);
-      
-              //замена тегов на их содержимое
-              if (chunk.includes(`${nameFileHtml}`)) {
-                  
-                  const readOneFileHTML = fs.createReadStream(path.join(__dirname, 'components', fileHTML), 'utf-8');
-                      let string='';
-                      readOneFileHTML.on('data', (data) => {
-                          string = string + data; 
-                      });
-                      readOneFileHTML.on('end', () => {
-                          chunk = chunk.replace(`{{${nameFileHtml}}}`, string);
-                          
-                          fsPromises.writeFile(path.join(__dirname, 'project-dist', 'index.html'), chunk, 'utf-8');
-                      });
-              }
-         }
-      }}
-      
-      );
+        fullChunk += chunk;
+       })
+
+      readStreamIndex.on('end', () => {
+
+            for (const fileHTML of filesHTML) {
+                if (path.extname(fileHTML) == '.html') { 
+                const nameFileHtml = fileHTML.slice(0, fileHTML.length-5);
+              
+                //замена тегов на их содержимое
+            if (fullChunk.includes(`${nameFileHtml}`)) {
+                const readOneFileHTML = fs.createReadStream(path.join(__dirname, 'components', fileHTML), 'utf-8');
+                    let string='';
+     
+                    readOneFileHTML.on('data', (data) => {
+                        string = string + data; 
+                    });
+
+                    readOneFileHTML.on('end', () => {
+                        fullChunk = fullChunk.replace(`{{${nameFileHtml}}}`, string);
+
+                        fsPromises.writeFile(path.join(__dirname, 'project-dist', 'index.html'), fullChunk, 'utf-8');
+                    })     
+            }
+      }
+    }})
     } catch (err) {
         console.log(err);
     }
-  }
-  createFileIndex();
-  createFileIndex();
+}
+createFileIndex()
