@@ -13,7 +13,8 @@ async function createDir() {
 }
 createDir();
 
-//сбор стилей в единый файл project-dist/style.css.
+
+//сбор стилей в единый файл project-dist/style.css
 const outputStream = fs.createWriteStream(path.join(__dirname, 'project-dist', 'style.css'));
 
 async function writeFileCSS() { 
@@ -33,24 +34,26 @@ async function writeFileCSS() {
 writeFileCSS();
 
 
-// создание папки assets в project-dist/assets
-async function createDirAssets() {
-    try {    
-        await fsPromises.mkdir(path.join(__dirname, 'project-dist', 'assets'), { recursive: true });
-        await fsPromises.mkdir(path.join(__dirname, 'project-dist', 'assets', 'fonts'), { recursive: true });
-        await fsPromises.mkdir(path.join(__dirname, 'project-dist', 'assets', 'img'), { recursive: true });
-        await fsPromises.mkdir(path.join(__dirname, 'project-dist', 'assets', 'svg'), { recursive: true });
-    } catch (err) {
-      console.log(err);
+// создание папки assets в project-dist/assets                       
+async function copyAssets(src, srcInProject) {
+    const foldersInAssets = await fsPromises.readdir(src, { withFileTypes: true });
+    
+    await fsPromises.rm(srcInProject, { force: true, recursive: true }); //сперва удалить для актуализации
+    await fsPromises.mkdir(srcInProject, { recursive: true }); //затем создать заново
+    
+    for (let oneFolderInAssets of foldersInAssets) {
+        const srcInProjectPath = path.join(srcInProject, oneFolderInAssets.name);
+
+        await fsPromises.mkdir(srcInProjectPath);
     }
 }
-createDirAssets();
 
 
 //читаем содержимое папки assets и копируем все в папку-копию в project-dist/assets
 async function copyDirAssets() {
     try {
         const dirAssets =  await fsPromises.readdir(path.join(__dirname, 'assets'));
+
         for (folders  of dirAssets) { 
             if(folders != '.DS_Store'){ //!!!эта проверка, т.к. у меня возникает какой-то скрытый файл .DS_Store
             const filesInFolder =  await fsPromises.readdir(path.join(__dirname, 'assets', folders), {force: true});
@@ -64,7 +67,8 @@ async function copyDirAssets() {
         console.error(err);
     }
 }   
-copyDirAssets();
+
+copyAssets(path.join(__dirname, "assets"), path.join(__dirname, "project-dist", "assets")).then(copyDirAssets);
 
 
 //читаем рзаметку, меняем теги на содержимое и все записываем в новый файл index.html
@@ -107,3 +111,4 @@ async function createFileIndex() {
     }
 }
 createFileIndex()
+
